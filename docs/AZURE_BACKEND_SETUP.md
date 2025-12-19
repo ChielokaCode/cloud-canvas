@@ -110,22 +110,31 @@ az functionapp create \
 
 ## Step 2: Deploy Azure Functions Backend
 
-Create a new Azure Functions project with the following structure:
+The Azure Functions backend code is located in the `azure-functions/` directory:
 
 ```
-lumina-backend/
-├── host.json
-├── package.json
-├── src/
-│   ├── functions/
-│   │   ├── photos.ts
-│   │   ├── users.ts
-│   │   ├── comments.ts
-│   │   └── likes.ts
-│   └── lib/
-│       ├── cosmos.ts
-│       ├── storage.ts
-│       └── redis.ts
+azure-functions/
+├── host.json           # Functions host configuration
+├── package.json        # Node.js dependencies
+├── tsconfig.json       # TypeScript configuration
+├── local.settings.json # Local development settings
+├── photos.ts           # Photo CRUD operations
+├── users.ts            # User management
+├── comments.ts         # Comments on photos
+├── likes.ts            # Like/unlike functionality
+└── lib/
+    ├── cosmos.ts       # Cosmos DB client
+    ├── storage.ts      # Blob Storage client
+    └── redis.ts        # Redis cache client
+```
+
+### Deploying the Functions
+
+```bash
+cd azure-functions
+npm install
+npm run build
+func azure functionapp publish lumina-api
 ```
 
 ### Sample Function Code (photos.ts)
