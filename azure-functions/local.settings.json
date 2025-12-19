@@ -1,0 +1,15 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AZURE_COSMOS_ENDPOINT": "your-cosmos-endpoint",
+    "AZURE_COSMOS_KEY": "your-cosmos-key",
+    "AZURE_COSMOS_DATABASE": "photoshare",
+    "AZURE_STORAGE_CONNECTION_STRING": "your-storage-connection-string",
+    "AZURE_STORAGE_CONTAINER": "photos",
+    "AZURE_REDIS_HOST": "your-redis-host",
+    "AZURE_REDIS_KEY": "your-redis-key",
+    "AZURE_REDIS_PORT": "6380"
+  }
+}
