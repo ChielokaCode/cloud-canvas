@@ -1,11 +1,15 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { Photo, Comment, UploadPhotoData } from '@/types';
 import { mockPhotos } from '@/services/mockData';
+import { photoService } from '@/services/azureApi';
+import { isAzureConfigured } from '@/config/azureConfig';
 import { useAuth } from './AuthContext';
 
 interface PhotoContextType {
   photos: Photo[];
   isLoading: boolean;
+  error: string | null;
+  refreshPhotos: () => Promise<void>;
   uploadPhoto: (data: UploadPhotoData) => Promise<Photo>;
   deletePhoto: (photoId: string) => Promise<void>;
   likePhoto: (photoId: string) => void;
@@ -20,7 +24,34 @@ const PhotoContext = createContext<PhotoContextType | undefined>(undefined);
 export function PhotoProvider({ children }: { children: ReactNode }) {
   const [photos, setPhotos] = useState<Photo[]>(mockPhotos);
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { user, getAccessToken } = useAuth();
+
+  // Fetch photos from API
+  const refreshPhotos = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const token = await getAccessToken();
+      const fetchedPhotos = await photoService.getPhotos(token || undefined);
+      setPhotos(fetchedPhotos);
+    } catch (err) {
+      console.error('Failed to fetch photos:', err);
+      setError('Failed to load photos');
+      // Fall back to mock data
+      if (!isAzureConfigured()) {
+        setPhotos(mockPhotos);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getAccessToken]);
+
+  // Load photos on mount
+  useEffect(() => {
+    refreshPhotos();
+  }, []);
 
   const uploadPhoto = useCallback(async (data: UploadPhotoData): Promise<Photo> => {
     if (!user || user.role !== 'creator') {
@@ -29,32 +60,23 @@ export function PhotoProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     
-    // Simulate upload delay - In production, this would upload to Azure Blob Storage
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const newPhoto: Photo = {
-      id: `photo-${Date.now()}`,
-      url: URL.createObjectURL(data.file),
-      thumbnailUrl: URL.createObjectURL(data.file),
-      title: data.title,
-      caption: data.caption,
-      location: data.location,
-      people: data.people,
-      creatorId: user.id,
-      creatorName: user.name,
-      creatorAvatar: user.avatar,
-      likes: 0,
-      likedBy: [],
-      comments: [],
-      createdAt: new Date(),
-      tags: [],
-    };
+    try {
+      const token = await getAccessToken();
+      const newPhoto = await photoService.uploadPhoto(data, user.id, token || undefined);
+      
+      // Add creator info to the photo
+      const photoWithCreator: Photo = {
+        ...newPhoto,
+        creatorName: user.name,
+        creatorAvatar: user.avatar,
+      };
 
-    setPhotos(prev => [newPhoto, ...prev]);
-    setIsLoading(false);
-    
-    return newPhoto;
-  }, [user]);
+      setPhotos(prev => [photoWithCreator, ...prev]);
+      return photoWithCreator;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, getAccessToken]);
 
   const deletePhoto = useCallback(async (photoId: string): Promise<void> => {
     if (!user || user.role !== 'creator') {
@@ -62,15 +84,20 @@ export function PhotoProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
     
-    setPhotos(prev => prev.filter(p => p.id !== photoId));
-    setIsLoading(false);
-  }, [user]);
+    try {
+      const token = await getAccessToken();
+      await photoService.deletePhoto(photoId, token || undefined);
+      setPhotos(prev => prev.filter(p => p.id !== photoId));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, getAccessToken]);
 
-  const likePhoto = useCallback((photoId: string) => {
+  const likePhoto = useCallback(async (photoId: string) => {
     if (!user) return;
     
+    // Optimistic update
     setPhotos(prev => prev.map(photo => {
       if (photo.id === photoId && !photo.likedBy.includes(user.id)) {
         return {
@@ -81,11 +108,31 @@ export function PhotoProvider({ children }: { children: ReactNode }) {
       }
       return photo;
     }));
-  }, [user]);
 
-  const unlikePhoto = useCallback((photoId: string) => {
+    // Sync with API
+    try {
+      const token = await getAccessToken();
+      await photoService.likePhoto(photoId, user.id, token || undefined);
+    } catch (err) {
+      console.error('Failed to like photo:', err);
+      // Revert on error
+      setPhotos(prev => prev.map(photo => {
+        if (photo.id === photoId) {
+          return {
+            ...photo,
+            likes: photo.likes - 1,
+            likedBy: photo.likedBy.filter(id => id !== user.id),
+          };
+        }
+        return photo;
+      }));
+    }
+  }, [user, getAccessToken]);
+
+  const unlikePhoto = useCallback(async (photoId: string) => {
     if (!user) return;
     
+    // Optimistic update
     setPhotos(prev => prev.map(photo => {
       if (photo.id === photoId && photo.likedBy.includes(user.id)) {
         return {
@@ -96,12 +143,31 @@ export function PhotoProvider({ children }: { children: ReactNode }) {
       }
       return photo;
     }));
-  }, [user]);
 
-  const addComment = useCallback((photoId: string, content: string) => {
+    // Sync with API
+    try {
+      const token = await getAccessToken();
+      await photoService.unlikePhoto(photoId, user.id, token || undefined);
+    } catch (err) {
+      console.error('Failed to unlike photo:', err);
+      // Revert on error
+      setPhotos(prev => prev.map(photo => {
+        if (photo.id === photoId) {
+          return {
+            ...photo,
+            likes: photo.likes + 1,
+            likedBy: [...photo.likedBy, user.id],
+          };
+        }
+        return photo;
+      }));
+    }
+  }, [user, getAccessToken]);
+
+  const addComment = useCallback(async (photoId: string, content: string) => {
     if (!user) return;
     
-    const newComment: Comment = {
+    const optimisticComment: Comment = {
       id: `comment-${Date.now()}`,
       userId: user.id,
       userName: user.name,
@@ -110,16 +176,48 @@ export function PhotoProvider({ children }: { children: ReactNode }) {
       createdAt: new Date(),
     };
 
+    // Optimistic update
     setPhotos(prev => prev.map(photo => {
       if (photo.id === photoId) {
         return {
           ...photo,
-          comments: [...photo.comments, newComment],
+          comments: [...photo.comments, optimisticComment],
         };
       }
       return photo;
     }));
-  }, [user]);
+
+    // Sync with API
+    try {
+      const token = await getAccessToken();
+      const savedComment = await photoService.addComment(photoId, user.id, content, token || undefined);
+      
+      // Update with server response
+      setPhotos(prev => prev.map(photo => {
+        if (photo.id === photoId) {
+          return {
+            ...photo,
+            comments: photo.comments.map(c => 
+              c.id === optimisticComment.id ? { ...savedComment, userName: user.name, userAvatar: user.avatar } : c
+            ),
+          };
+        }
+        return photo;
+      }));
+    } catch (err) {
+      console.error('Failed to add comment:', err);
+      // Revert on error
+      setPhotos(prev => prev.map(photo => {
+        if (photo.id === photoId) {
+          return {
+            ...photo,
+            comments: photo.comments.filter(c => c.id !== optimisticComment.id),
+          };
+        }
+        return photo;
+      }));
+    }
+  }, [user, getAccessToken]);
 
   const getPhotoById = useCallback((photoId: string) => {
     return photos.find(p => p.id === photoId);
@@ -133,6 +231,8 @@ export function PhotoProvider({ children }: { children: ReactNode }) {
     <PhotoContext.Provider value={{
       photos,
       isLoading,
+      error,
+      refreshPhotos,
       uploadPhoto,
       deletePhoto,
       likePhoto,

@@ -1,35 +1,32 @@
-import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Camera, Mail, Lock, Loader2 } from 'lucide-react';
+import { Camera, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { isAzureConfigured } from '@/config/azureConfig';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, loginAsRole, isLoading } = useAuth();
+  const { login, loginAsRole, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const azureConfigured = isAzureConfigured();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const success = await login(email, password);
-    
-    if (success) {
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully logged in.',
-      });
-      navigate('/browse');
-    } else {
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    navigate('/browse');
+    return null;
+  }
+
+  const handleAzureLogin = async () => {
+    try {
+      await login();
+    } catch (error) {
       toast({
         title: 'Login failed',
-        description: 'Invalid email or password.',
+        description: 'There was an error signing in. Please try again.',
         variant: 'destructive',
       });
     }
@@ -62,14 +59,64 @@ const Login = () => {
             <p className="text-muted-foreground">Sign in to continue to Lumina</p>
           </div>
 
-          {/* Quick login buttons */}
-          <div className="space-y-3 mb-8">
-            <p className="text-sm text-center text-muted-foreground">Quick access (Demo)</p>
+          {/* Azure AD B2C Login */}
+          {azureConfigured ? (
+            <div className="space-y-4 mb-8">
+              <Button
+                onClick={handleAzureLogin}
+                disabled={isLoading}
+                className="w-full h-12"
+                variant="hero"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <svg className="mr-2 h-5 w-5" viewBox="0 0 21 21" fill="currentColor">
+                      <path d="M0 0h10v10H0V0zm11 0h10v10H11V0zM0 11h10v10H0V11zm11 0h10v10H11V11z"/>
+                    </svg>
+                    Sign in with Microsoft
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Powered by Azure Active Directory B2C
+              </p>
+            </div>
+          ) : (
+            <Alert className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Azure AD B2C is not configured. Configure your <code>.env</code> file with Azure credentials to enable SSO login. Using demo mode for now.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="relative mb-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">
+                {azureConfigured ? 'Or use demo mode' : 'Demo login'}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick login buttons for demo */}
+          <div className="space-y-3">
+            <p className="text-sm text-center text-muted-foreground">
+              Quick access (Demo)
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
                 onClick={() => handleQuickLogin('creator')}
                 className="h-12"
+                disabled={isLoading}
               >
                 Login as Creator
               </Button>
@@ -77,69 +124,24 @@ const Login = () => {
                 variant="outline"
                 onClick={() => handleQuickLogin('consumer')}
                 className="h-12"
+                disabled={isLoading}
               >
                 Login as Consumer
               </Button>
             </div>
           </div>
 
-          <div className="relative mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
+          {!azureConfigured && (
+            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm font-medium mb-2">To enable Azure AD B2C:</p>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Create an Azure AD B2C tenant</li>
+                <li>Register your application</li>
+                <li>Create user flows (sign-up/sign-in)</li>
+                <li>Update your <code>.env</code> file with credentials</li>
+              </ol>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </Button>
-          </form>
-
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            In production, this would use Azure AD B2C
-          </p>
+          )}
         </div>
       </div>
     </div>
