@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Heart, MessageCircle, MapPin, Users, X, Send } from 'lucide-react';
 import { Photo } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,28 +15,195 @@ interface PhotoDetailProps {
   onClose: () => void;
 }
 
+interface GetLikesResponse {
+  count: number;
+  userHasLiked: boolean;
+}
+
+
 export function PhotoDetail({ photo, onClose }: PhotoDetailProps) {
   const { user } = useAuth();
-  const { likePhoto, unlikePhoto, addComment } = usePhotos();
+  const { likePhoto, unlikePhoto} = usePhotos();
   const [comment, setComment] = useState('');
-  const [isLiked, setIsLiked] = useState(user ? photo.likedBy.includes(user.id) : false);
+  const [comments, setComments] = useState(photo.comments || []);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [likes, setLikes] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
 
-  const handleLike = () => {
-    if (!user) return;
+
+    const getUserName = () => {
+  return localStorage.getItem("userName");
+}
+
+const getUserRole = () => {
+  return localStorage.getItem("userRole");
+}
+
+const getUserId = () => {
+  return localStorage.getItem("userId");
+}
+
+  const userId = getUserId();
+
+
+
+  const getLikes = async (
+  photoId: string,
+  userId?: string
+): Promise<GetLikesResponse> => {
+  const response = await fetch('http://localhost:7071/api/get-likes', {
+    method: 'GET',
+    headers: {
+      'x-photo-id': photoId,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return response.json();
+};
+
+useEffect(() => {
+    const fetchLikes = async () => {
+      try {
+        const data = await getLikes(photo.id, userId ?? undefined);
+        setLikes(data.count);
+        setIsLiked(data.userHasLiked);
+      } catch (err) {
+        console.error('Failed to fetch likes:', err);
+      }
+    };
+
+    fetchLikes();
+  }, [photo.id, userId]);
+
+
+
+
+  const likePhotoRequest = async () => {
+  const response = await fetch('http://localhost:7071/api/like-photo', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ photoId: photo.id }),
+  });
+
+  return response.ok;
+};
+
+const unlikePhotoRequest = async () => {
+  const response = await fetch('http://localhost:7071/api/unlike-photo', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ photoId: photo.id }),
+  });
+
+  return response.ok;
+};
+
+
+ const handleLike = async () => {
+  if (!user || !userId) return;
+
+  try {
     if (isLiked) {
-      unlikePhoto(photo.id);
-    } else {
-      likePhoto(photo.id);
+  const success = await unlikePhotoRequest();
+  if (success) {
+    setLikes(prev => Math.max(0, prev - 1));
+    setIsLiked(false);
+    unlikePhoto(photo.id); // update context
+  }
+} else {
+  const success = await likePhotoRequest();
+  if (success) {
+    setLikes(prev => prev + 1);
+    setIsLiked(true);
+    likePhoto(photo.id); // update context
+  }
+}
+
+  } catch (err) {
+    console.error('Like/unlike failed:', err);
+  }
+};
+
+
+
+
+
+useEffect(() => {
+  const fetchComments = async () => {
+    try {
+      const response = await fetch('http://localhost:7071/api/get-comments', {
+        method: 'GET', 
+        headers: {
+          'x-photo-id': photo.id,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch comments', await response.text());
+        return;
+      }
+
+      const data = await response.json();
+       setComments(data);
+    } catch (err) {
+      console.error('Error fetching comments:', err);
     }
-    setIsLiked(!isLiked);
   };
 
-  const handleSubmitComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment.trim() || !user) return;
-    addComment(photo.id, comment.trim());
-    setComment('');
-  };
+  fetchComments();
+}, [photo.id]);
+
+
+
+const handleSubmitComment = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!comment.trim() || !user) return;
+setLoading(true); 
+setError(null);
+  try {
+    const response = await fetch('http://localhost:7071/api/create-comment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        photoId: photo.id,
+        userId: getUserId(),
+        userName: getUserName(),
+        userRole: getUserRole(),
+        content: comment.trim(),
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to post comment', await response.text());
+      return;
+    }
+
+    const savedComment = await response.json();
+
+    // Update local state via context helper
+    //addComment(photo.id, savedComment.content);
+    
+    setComments(prev => [...prev, savedComment]);
+    
+  } catch (err) {
+    setError('Failed to post comment');
+    console.error('Error posting comment:', err);
+  }finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/80 backdrop-blur-sm animate-fade-in">
@@ -54,7 +221,7 @@ export function PhotoDetail({ photo, onClose }: PhotoDetailProps) {
           {/* Image */}
           <div className="flex-1 bg-foreground/5 flex items-center justify-center min-h-[300px] lg:min-h-0">
             <img
-              src={photo.url}
+              src={photo.imageUrl}
               alt={photo.title}
               className="max-w-full max-h-[50vh] lg:max-h-[90vh] object-contain"
             />
@@ -101,29 +268,32 @@ export function PhotoDetail({ photo, onClose }: PhotoDetailProps) {
             {/* Actions */}
             <div className="flex items-center gap-4 p-4 border-b border-border">
               <Button
-                variant="ghost"
-                size="sm"
-                className={cn("gap-2", isLiked && "text-primary")}
-                onClick={handleLike}
-              >
-                <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
-                <span>{photo.likes}</span>
-              </Button>
+  variant="ghost"
+  size="sm"
+  className={cn("gap-2", isLiked && "text-primary")}
+  onClick={handleLike}
+>
+  <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
+ <span>
+  {photo.likes + (isLiked && !photo.likedBy.includes(user?.id || '') ? 1 : 0)}
+</span>
+</Button>
+
               <div className="flex items-center gap-2 text-muted-foreground">
                 <MessageCircle className="h-5 w-5" />
-                <span>{photo.comments.length}</span>
+                <span>{comments.length}</span>
               </div>
             </div>
 
             {/* Comments */}
             <ScrollArea className="flex-1 p-4">
-              {photo.comments.length === 0 ? (
+              {comments.length === 0 ? (
                 <p className="text-center text-muted-foreground text-sm py-8">
                   No comments yet. Be the first!
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {photo.comments.map((comment) => (
+                  {comments.map((comment) => (
                     <div key={comment.id} className="flex gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={comment.userAvatar} alt={comment.userName} />
@@ -155,11 +325,13 @@ export function PhotoDetail({ photo, onClose }: PhotoDetailProps) {
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     className="flex-1"
+                    disabled={loading}
                   />
-                  <Button type="submit" size="icon" disabled={!comment.trim()}>
-                    <Send className="h-4 w-4" />
+                  <Button type="submit" size="icon" disabled={loading}>
+                    {loading ? '...' : <Send className="h-4 w-4" />} 
                   </Button>
                 </div>
+                 {error && <p style={{ color: 'red' }}>{error}</p>}
               </form>
             )}
           </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, Filter, SlidersHorizontal } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { PhotoGrid } from '@/components/photos/PhotoGrid';
@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 const Browse = () => {
-  const { photos } = usePhotos();
+  const { photos, refreshPhotos } = usePhotos();
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'popular'>('recent');
@@ -24,6 +24,13 @@ const Browse = () => {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
+  // Fetch photos on component mount
+  useEffect(() => {
+    refreshPhotos().catch(err => {
+      console.error('Failed to refresh photos:', err);
+    });
+  }, [refreshPhotos]);
 
   const filteredPhotos = useMemo(() => {
     let result = [...photos];
@@ -59,10 +66,10 @@ const Browse = () => {
         {/* Page header */}
         <div className="mb-8">
           <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
-            Discover
+            Chat
           </h1>
           <p className="text-muted-foreground">
-            Explore stunning photography from creators around the world
+            Explore stunning pictures from your friends
           </p>
         </div>
 

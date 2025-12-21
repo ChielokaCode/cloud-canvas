@@ -2,30 +2,32 @@ import { Configuration, LogLevel } from '@azure/msal-browser';
 
 // Azure AD B2C Configuration
 // These values should come from your .env file
-const b2cTenant = import.meta.env.VITE_AZURE_AD_B2C_TENANT || 'your-tenant.onmicrosoft.com';
-const clientId = import.meta.env.VITE_AZURE_AD_B2C_CLIENT_ID || '';
-const signInPolicy = import.meta.env.VITE_AZURE_AD_B2C_POLICY_SIGNIN || 'B2C_1_signupsignin';
-const redirectUri = import.meta.env.VITE_AZURE_AD_B2C_REDIRECT_URI || window.location.origin;
+// const tenantId = import.meta.env.VITE_AZURE_AD_TENANT || '';
+// const clientId = import.meta.env.VITE_AZURE_AD_CLIENT_ID || '';
+const clientId = '5c90d1bc-43ce-4737-ba5e-659583441194';
+const tenantId = '87902317-6752-4f33-8bfc-1f73e9287d66';
+//const signInPolicy = import.meta.env.VITE_AZURE_AD_B2C_POLICY_SIGNIN || 'B2C_1_signupsignin';
+const redirectUri = 'http://localhost:8080';
 
 // B2C authority URLs
-const b2cPolicies = {
-  names: {
-    signUpSignIn: signInPolicy,
-  },
-  authorities: {
-    signUpSignIn: {
-      authority: `https://${b2cTenant.split('.')[0]}.b2clogin.com/${b2cTenant}/${signInPolicy}`,
-    },
-  },
-  authorityDomain: `${b2cTenant.split('.')[0]}.b2clogin.com`,
-};
+// const b2cPolicies = {
+//   names: {
+//     signUpSignIn: signInPolicy,
+//   },
+//   authorities: {
+//     signUpSignIn: {
+//       authority: `https://${b2cTenant.split('.')[0]}.b2clogin.com/${b2cTenant}/${signInPolicy}`,
+//     },
+//   },
+//   authorityDomain: `${b2cTenant.split('.')[0]}.b2clogin.com`,
+// };
 
 // MSAL Configuration
 export const msalConfig: Configuration = {
   auth: {
     clientId,
-    authority: b2cPolicies.authorities.signUpSignIn.authority,
-    knownAuthorities: [b2cPolicies.authorityDomain],
+    authority: `https://login.microsoftonline.com/${tenantId}`,
+    // knownAuthorities: [b2cPolicies.authorityDomain],
     redirectUri,
     postLogoutRedirectUri: redirectUri,
     navigateToLoginRequestUrl: true,
@@ -55,13 +57,12 @@ export const msalConfig: Configuration = {
 
 // Scopes for API access
 export const loginRequest = {
-  scopes: ['openid', 'profile', 'offline_access'],
+  scopes: ['openid', 'profile', 'email'],
 };
+
 
 // API scopes (add your Azure Function/API scopes here)
 export const apiConfig = {
-  scopes: [`https://${b2cTenant}/api/read`, `https://${b2cTenant}/api/write`],
+  scopes: [`https://${tenantId}/api/read`, `https://${tenantId}/api/write`],
   uri: import.meta.env.VITE_AZURE_API_ENDPOINT || '',
 };
-
-export { b2cPolicies };

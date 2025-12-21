@@ -11,7 +11,9 @@ interface AuthContextType extends AuthState {
   login: () => Promise<void>;
   logout: () => void;
   loginAsRole: (role: UserRole) => void;
-  getAccessToken: () => Promise<string | null>;
+  loginWithRole: (role: UserRole) => Promise<void>;
+  loginWithUser: (user: User) => void;
+  // logoutLocal: () => void;
   account: AccountInfo | null;
 }
 
@@ -29,17 +31,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const account = accounts[0] || null;
 
+ const getAccessToken = () => {
+  return localStorage.getItem("token");
+};
   // Convert MSAL account to our User type
   const mapAccountToUser = useCallback(async (account: AccountInfo): Promise<User> => {
     const userId = account.localAccountId || account.homeAccountId;
     
     // Try to get role from Azure backend
-    let role: UserRole = 'consumer';
+    let role: string = 'consumer';
     try {
       if (isAzureConfigured()) {
-        const token = await getAccessToken();
+        const token = getAccessToken();
         if (token) {
-          role = await userService.getUserRole(userId, token);
+          role = await userService.getUserRole();
         }
       }
     } catch (error) {
@@ -47,10 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Check claims for role (if set in Azure AD B2C)
-    const claims = account.idTokenClaims as Record<string, unknown> | undefined;
-    if (claims?.extension_role) {
-      role = claims.extension_role as UserRole;
-    }
+   const claims = account.idTokenClaims as any;
+
+if (claims?.roles?.includes('creator')) {
+  role = 'creator';
+} else {
+  role = 'consumer';
+}
 
     return {
       id: userId,
@@ -62,53 +70,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Get access token for API calls
-  const getAccessToken = useCallback(async (): Promise<string | null> => {
-    if (!account) return null;
+ 
 
-    try {
-      const response = await instance.acquireTokenSilent({
-        ...loginRequest,
-        account,
-      });
-      return response.accessToken;
-    } catch (error) {
-      // If silent token acquisition fails, try interactive
-      try {
-        const response = await instance.acquireTokenPopup(loginRequest);
-        return response.accessToken;
-      } catch (popupError) {
-        console.error('Failed to acquire token:', popupError);
-        return null;
-      }
-    }
-  }, [instance, account]);
 
   // Initialize auth state from MSAL
   useEffect(() => {
-    const initAuth = async () => {
-      if (inProgress !== InteractionStatus.None) {
-        return; // Wait for MSAL to finish
-      }
+  if (inProgress !== InteractionStatus.None) return;
 
-      if (isAuthenticated && account) {
-        const user = await mapAccountToUser(account);
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-      }
-    };
+  if (!accounts.length) {
+    setAuthState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
+    return;
+  }
 
-    initAuth();
-  }, [isAuthenticated, account, inProgress, mapAccountToUser]);
+  const account = accounts[0];
+  const pendingRole = localStorage.getItem("pendingRole") as UserRole | null;
+  console.log("Pending role from localStorage:", pendingRole);
+
+  (async () => {
+    setAuthState(prev => ({ ...prev, isLoading: true }));
+
+    const user = await mapAccountToUser(account);
+
+    setAuthState({
+      user: pendingRole ? { ...user, role: pendingRole } : user,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+
+    // if (pendingRole) {
+    //   localStorage.removeItem("pendingRole");
+    // }
+  })();
+}, [accounts, inProgress, mapAccountToUser]);
+
 
   // Login with Azure AD B2C
   const login = useCallback(async () => {
@@ -128,20 +126,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [instance]);
 
+  const loginWithUser = useCallback((user: User) => {
+  setAuthState({
+    user,
+    isAuthenticated: true,
+    isLoading: false,
+  });
+}, []);
+
+
   // Logout
-  const logout = useCallback(() => {
-    if (isAzureConfigured() && account) {
-      instance.logoutRedirect({
-        account,
-      });
-    } else {
-      setAuthState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
-    }
-  }, [instance, account]);
+  // const logout = useCallback(() => {
+  //   if (isAzureConfigured() && account) {
+  //     instance.logoutRedirect({
+  //       account,
+  //     });
+  //   } else {
+  //     setAuthState({
+  //       user: null,
+  //       isAuthenticated: false,
+  //       isLoading: false,
+  //     });
+  //   }
+  // }, [instance, account]);
 
   // Mock login for development (when Azure is not configured)
   const loginAsRole = useCallback((role: UserRole) => {
@@ -155,6 +162,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+
+//   const logoutLocal = useCallback(() => {
+//   // Clear persisted auth
+//   localStorage.removeItem("token");
+//   localStorage.removeItem("userId");
+//   localStorage.removeItem("userName");
+//   localStorage.removeItem("userRole");
+//   localStorage.removeItem("pendingRole");
+
+//   setAuthState({
+//     user: null,
+//     isAuthenticated: false,
+//     isLoading: false,
+//   });
+// }, []);
+
+const logout = useCallback(() => {
+  // Always clear local auth first (safe for both cases)
+  localStorage.removeItem("token");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("userName");
+  localStorage.removeItem("userRole");
+  localStorage.removeItem("pendingRole");
+
+  // If Azure AD user, let MSAL handle the redirect
+  if (isAzureConfigured() && account) {
+    instance.logoutRedirect({
+      account,
+    });
+    return; // MSAL redirect takes over
+  }
+
+  // Local/JWT user fallback
+  setAuthState({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+  });
+}, [instance, account]);
+
+
+
+const loginWithRole = useCallback(
+  async (role: UserRole) => {
+    try {
+      // Persist role before redirect
+      localStorage.setItem("pendingRole", role);
+
+      // Trigger Microsoft login (redirect stops execution)
+      await instance.loginRedirect(loginRequest);
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  },
+  [instance]
+);
+
+
+
   return (
     <AuthContext.Provider
       value={{
@@ -162,7 +228,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         loginAsRole,
-        getAccessToken,
+        loginWithRole,
+        loginWithUser,
         account,
       }}
     >
@@ -178,3 +245,4 @@ export function useAuth() {
   }
   return context;
 }
+

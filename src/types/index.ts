@@ -5,7 +5,7 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
-  role: UserRole;
+  role: string;
   createdAt: Date;
 }
 
@@ -13,12 +13,14 @@ export interface Photo {
   id: string;
   url: string;
   thumbnailUrl: string;
+  imageUrl: string;
   title: string;
   caption: string;
   location?: string;
   people?: string[];
   creatorId: string;
   creatorName: string;
+  creatorRole: string;
   creatorAvatar?: string;
   likes: number;
   likedBy: string[];

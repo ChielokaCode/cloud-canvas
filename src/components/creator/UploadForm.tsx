@@ -13,7 +13,7 @@ interface UploadFormProps {
 }
 
 export function UploadForm({ onSuccess }: UploadFormProps) {
-  const { uploadPhoto, isLoading } = usePhotos();
+  const { uploadPhoto, isUploading } = usePhotos();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -78,6 +78,8 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isUploading) return;
+
     if (!file || !title || !caption) {
       toast({
         title: 'Missing information',
@@ -87,6 +89,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
       return;
     }
 
+    console.log("Submitting upload:", { file, title, caption, location, people });
     try {
       await uploadPhoto({
         file,
@@ -96,6 +99,7 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
         people: people ? people.split(',').map(p => p.trim()) : undefined,
       });
 
+      console.log("Upload successful");
       toast({
         title: 'Photo uploaded!',
         description: 'Your photo has been successfully uploaded.',
@@ -223,8 +227,8 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
       </div>
 
       {/* Submit */}
-      <Button type="submit" className="w-full" size="lg" disabled={isLoading || !file}>
-        {isLoading ? (
+      <Button type="submit" className="w-full" size="lg" disabled={isUploading || !file}>
+        {isUploading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Uploading...

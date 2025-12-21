@@ -1,44 +1,40 @@
 import { useNavigate, Link } from 'react-router-dom';
-import { Camera, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { Camera, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { isAzureConfigured } from '@/config/azureConfig';
+import { useState } from 'react';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, loginAsRole, isLoading, isAuthenticated } = useAuth();
+  const { loginWithRole, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const azureConfigured = isAzureConfigured();
 
-  // Redirect if already authenticated
+  const [loadingCreator, setLoadingCreator] = useState(false);
+  const [loadingConsumer, setLoadingConsumer] = useState(false);
+
   if (isAuthenticated) {
     navigate('/browse');
     return null;
   }
 
-  const handleAzureLogin = async () => {
-    try {
-      await login();
-    } catch (error) {
-      toast({
-        title: 'Login failed',
-        description: 'There was an error signing in. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
+  const handleLogin = async (role: 'creator' | 'consumer') => {
+    if (role === 'creator') setLoadingCreator(true);
+    if (role === 'consumer') setLoadingConsumer(true);
 
-  const handleQuickLogin = (role: 'creator' | 'consumer') => {
-    loginAsRole(role);
-    toast({
-      title: 'Welcome!',
-      description: `Logged in as ${role}.`,
-    });
-    navigate(role === 'creator' ? '/creator' : '/browse');
+    try {
+      await loginWithRole(role);
+      toast({ title: 'Welcome!', description: `Logged in as ${role}.` });
+      navigate(role === 'creator' ? '/creator' : '/browse');
+    } catch (error) {
+      toast({ title: 'Login failed', description: 'There was an error signing in.', variant: 'destructive' });
+    } finally {
+      if (role === 'creator') setLoadingCreator(false);
+      if (role === 'consumer') setLoadingConsumer(false);
+    }
   };
 
   return (
@@ -54,94 +50,54 @@ const Login = () => {
 
         {/* Login Card */}
         <div className="bg-card rounded-2xl shadow-medium p-8 animate-fade-in-up">
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <h1 className="font-display text-2xl font-bold mb-2">Welcome back</h1>
             <p className="text-muted-foreground">Sign in to continue to Lumina</p>
           </div>
 
-          {/* Azure AD B2C Login */}
-          {azureConfigured ? (
-            <div className="space-y-4 mb-8">
-              <Button
-                onClick={handleAzureLogin}
-                disabled={isLoading}
-                className="w-full h-12"
-                variant="hero"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    <svg className="mr-2 h-5 w-5" viewBox="0 0 21 21" fill="currentColor">
-                      <path d="M0 0h10v10H0V0zm11 0h10v10H11V0zM0 11h10v10H0V11zm11 0h10v10H11V11z"/>
-                    </svg>
-                    Sign in with Microsoft
-                  </>
-                )}
+          {/* Azure AD login */}
+          {azureConfigured && (
+            <div className="space-y-4 mb-6">
+              <Button onClick={() => handleLogin('creator')} disabled={loadingCreator} className="w-full h-12" variant="hero">
+                {loadingCreator ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</> : 'Sign in with Microsoft'}
               </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                Powered by Azure Active Directory B2C
-              </p>
+              <p className="text-xs text-center text-muted-foreground">Powered by Microsoft Entra External ID</p>
             </div>
-          ) : (
+          )}
+
+          {!azureConfigured && (
             <Alert className="mb-6">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Azure AD B2C is not configured. Configure your <code>.env</code> file with Azure credentials to enable SSO login. Using demo mode for now.
-              </AlertDescription>
+              <AlertDescription>Azure AD is not configured. Using demo mode.</AlertDescription>
             </Alert>
           )}
 
-          <div className="relative mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
+          {/* Divider */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                {azureConfigured ? 'Or use demo mode' : 'Demo login'}
-              </span>
+              <span className="bg-card px-2 text-muted-foreground">Sign up with Email</span>
             </div>
           </div>
 
-          {/* Quick login buttons for demo */}
-          <div className="space-y-3">
-            <p className="text-sm text-center text-muted-foreground">
-              Quick access (Demo)
+          {/* Quick / Local Login Buttons */}
+          <div className="space-y-3 mb-4">
+            {/* <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" onClick={() => handleLogin('creator')} className="h-12">Demo Creator</Button>
+              <Button variant="outline" onClick={() => handleLogin('consumer')} className="h-12">Demo Consumer</Button>
+            </div> */}
+
+            <Button variant="secondary" onClick={() => navigate('/signup-creator')} className="w-full h-12">
+              Sign up as a Creator
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/signup-consumer')} className="w-full h-12">
+              Sign up as a Consumer
+            </Button>
+
+            <p className="text-sm text-center mt-2">
+              Already a user? <Link to="/signin" className="text-blue-500">Sign in</Link>
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                onClick={() => handleQuickLogin('creator')}
-                className="h-12"
-                disabled={isLoading}
-              >
-                Login as Creator
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleQuickLogin('consumer')}
-                className="h-12"
-                disabled={isLoading}
-              >
-                Login as Consumer
-              </Button>
-            </div>
           </div>
-
-          {!azureConfigured && (
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm font-medium mb-2">To enable Azure AD B2C:</p>
-              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>Create an Azure AD B2C tenant</li>
-                <li>Register your application</li>
-                <li>Create user flows (sign-up/sign-in)</li>
-                <li>Update your <code>.env</code> file with credentials</li>
-              </ol>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Heart, MessageCircle, MapPin, Share2 } from 'lucide-react';
 import { Photo } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,6 +18,35 @@ export function PhotoCard({ photo, onOpenDetail }: PhotoCardProps) {
   const [isLiked, setIsLiked] = useState(user ? photo.likedBy.includes(user.id) : false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const { photos } = usePhotos();
+  const currentPhoto = photos.find(p => p.id === photo.id) || photo;
+    const [comments, setComments] = useState(photo.comments || []);
+  
+
+  useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        const response = await fetch('http://localhost:7071/api/get-comments', {
+          method: 'GET', 
+          headers: {
+            'x-photo-id': photo.id,
+          },
+        });
+  
+        if (!response.ok) {
+          console.error('Failed to fetch comments', await response.text());
+          return;
+        }
+  
+        const data = await response.json();
+         setComments(data);
+      } catch (err) {
+        console.error('Error fetching comments:', err);
+      }
+    };
+  
+    fetchComments();
+  }, [photo.id]);
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -57,7 +86,7 @@ export function PhotoCard({ photo, onOpenDetail }: PhotoCardProps) {
             <div className="absolute inset-0 animate-pulse bg-muted" />
           )}
           <img
-            src={photo.thumbnailUrl}
+            src={photo.imageUrl}
             alt={photo.title}
             className={cn(
               "w-full object-cover transition-all duration-500 group-hover:scale-105",
@@ -132,7 +161,7 @@ export function PhotoCard({ photo, onOpenDetail }: PhotoCardProps) {
               }}
             >
               <MessageCircle className="h-4 w-4" />
-              <span className="text-xs">{photo.comments.length}</span>
+              <span>{comments.length}</span>
             </Button>
           </div>
         </div>

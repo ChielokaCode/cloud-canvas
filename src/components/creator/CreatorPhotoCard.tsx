@@ -48,7 +48,7 @@ export function CreatorPhotoCard({ photo }: CreatorPhotoCardProps) {
     <div className="group bg-card rounded-xl shadow-soft overflow-hidden transition-all duration-300 hover:shadow-medium">
       <div className="relative aspect-video overflow-hidden">
         <img
-          src={photo.thumbnailUrl}
+          src={photo.imageUrl}
           alt={photo.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />

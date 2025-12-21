@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { usePhotos } from '@/contexts/PhotoContext';
 
+
 const CreatorDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const { getPhotosByCreator, photos } = usePhotos();
@@ -32,14 +33,23 @@ const CreatorDashboard = () => {
   const myPhotos = getPhotosByCreator(user.id);
   
   // Calculate stats
-  const totalLikes = myPhotos.reduce((sum, photo) => sum + photo.likes, 0);
-  const totalComments = myPhotos.reduce((sum, photo) => sum + photo.comments.length, 0);
+  const totalLikes = myPhotos.reduce(
+  (sum, photo) => sum + (photo.likes ?? 0),
+  0
+);
+
+const totalComments = myPhotos.reduce(
+  (sum, photo) => sum + (photo.comments?.length ?? 0),
+  0
+);
+
 
   const stats = [
     { label: 'Photos', value: myPhotos.length, icon: Image },
     { label: 'Total Likes', value: totalLikes, icon: Heart },
     { label: 'Comments', value: totalComments, icon: MessageCircle },
   ];
+
 
   return (
     <div className="min-h-screen bg-background">

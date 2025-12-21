@@ -13,6 +13,10 @@ import Login from "./pages/Login";
 import Browse from "./pages/Browse";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import NotFound from "./pages/NotFound";
+import SignIn from "./pages/SignIn";
+import SignUpCreator from "./pages/SignUpCreator";
+import SignUpConsumer from "./pages/SignUpConsumer";
+import ProtectedRoute from "./ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -49,8 +53,19 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/browse" element={<Browse />} />
-                <Route path="/creator" element={<CreatorDashboard />} />
+                <Route path="/browse" element={
+    <ProtectedRoute>
+      <Browse />
+    </ProtectedRoute>
+  } />
+                <Route path="/creator" element={
+    <ProtectedRoute>
+      <CreatorDashboard />
+    </ProtectedRoute>
+  } />
+                <Route path="/signin/*" element={<SignIn />} />
+                <Route path="/signup-creator/*" element={<SignUpCreator />} />
+                <Route path="/signup-consumer/*" element={<SignUpConsumer />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
