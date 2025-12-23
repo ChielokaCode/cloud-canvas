@@ -2,7 +2,7 @@ import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functio
 import { getContainer, CONTAINERS } from '../lib/cosmos';
 import { uploadPhoto, deletePhoto } from '../lib/storage';
 import { getUserFromJwtToken } from '../lib/auth';
-// import { cacheGet, cacheSet, cacheDelete, cacheInvalidatePattern, CACHE_KEYS } from '../lib/redis';
+import { cacheGet, cacheSet, cacheDelete, bumpPhotosCacheVersion, getPhotosCacheVersion, cacheInvalidatePattern, CACHE_KEYS } from '../lib/redis';
 import { v4 as uuidv4 } from 'uuid';
 import { File } from 'undici';
 
@@ -71,6 +71,15 @@ export async function getPhotos(
     const limitParam = request.query.get("limit");
     const limit = limitParam ? parseInt(limitParam, 10) : 20;
 
+    const version = await getPhotosCacheVersion();
+    const cacheKey = CACHE_KEYS.photos(version, page, limit);
+
+    const cached = await cacheGet<Photo[]>(cacheKey);
+    if (cached) {
+      context.log("Returning cached photos list");
+      return { status: 200, jsonBody: cached };
+    }
+
     let query = "SELECT * FROM c ORDER BY c.createdAt DESC";
     const parameters: { name: string; value: number }[] = [];
 
@@ -88,6 +97,7 @@ export async function getPhotos(
 
     context.log(`Fetched ${photos.length} photos (page: ${page}, limit: ${limit})`);
 
+    await cacheSet(cacheKey, photos, 60);
     return { status: 200, jsonBody: photos as Photo[] };
   } catch (error) {
     context.error("Error fetching photos:", error);
@@ -142,12 +152,12 @@ export async function getPhoto(
       return { status: 400, jsonBody: { error: "Photo ID required" } };
     }
 
-    // const cacheKey = CACHE_KEYS.photo(id);
-    // const cached = await cacheGet<Photo>(cacheKey);
-    // if (cached) {
-    //   context.log(`Returning cached photo ${id}`);
-    //   return { status: 200, jsonBody: cached };
-    // }
+    const cacheKey = CACHE_KEYS.photo(id);
+    const cached = await cacheGet<Photo>(cacheKey);
+    if (cached) {
+      context.log(`Returning cached photo ${id}`);
+      return { status: 200, jsonBody: cached };
+    }
 
     const container = await getContainer(CONTAINERS.PHOTOS);
     const { resource: photo } = await container.item(id, id).read();
@@ -157,9 +167,8 @@ export async function getPhoto(
       return { status: 404, jsonBody: { error: "Photo not found" } };
     }
 
-    //const normalized = normalizePhoto(photo);
 
-    // await cacheSet(cacheKey, normalized, 300);
+    await cacheSet(cacheKey, photo, 300);
     context.log(`Fetched photo ${id} from database and cached`);
 
     return { status: 200, jsonBody: photo };
@@ -189,11 +198,6 @@ export async function createPhoto(
     }
 
     const formData = await request.formData();
-//     const entry = formData.get('image');
-
-// if (!(entry instanceof File)) {
-//   throw new Error('Not a file');
-// }
 
 const file = formData.get("file");
 
@@ -204,10 +208,6 @@ if (!file || typeof file !== "object") {
   };
 }
 
-
-// const file: File = entry;
-
-    //const file = formData.get('image') as File;
     const title = formData.get('title') as string;
     const caption = formData.get('caption') as string;
     const location = formData.get('location') as string;
@@ -241,8 +241,8 @@ if (!file || typeof file !== "object") {
     const container = await getContainer(CONTAINERS.PHOTOS);
     await container.items.create(photo);
 
-    // Invalidate cache
-    // await cacheInvalidatePattern('photos:*');
+    // 🔥 Safe cache invalidation
+    await bumpPhotosCacheVersion();
 
     return { status: 201, jsonBody: photo };
   } catch (error) {
@@ -283,9 +283,9 @@ export async function deletePhotoHandler(
     }
     await container.item(id, id).delete();
 
-    // Invalidate cache
-    // await cacheDelete(CACHE_KEYS.photo(id));
-    // await cacheInvalidatePattern('photos:*');
+    // 🔥 Proper cache cleanup
+    await cacheDelete(CACHE_KEYS.photo(id));
+    await bumpPhotosCacheVersion();
 
     return { status: 204 };
   } catch (error) {
