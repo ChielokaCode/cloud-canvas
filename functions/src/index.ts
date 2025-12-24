@@ -13,9 +13,9 @@ import './get-likes/index'
 import './like-photo/index'
 import './unlike-photo/index'
 
-import './signin/index'
 import './signup-creator/index'
 import './signup-consumer/index'
+import { signin } from "./signin/index";
 
 
 
@@ -40,4 +40,10 @@ app.http("getPing", {
   methods: ["GET", "POST"],
   authLevel: "anonymous",
   handler: getPing,
+});
+
+app.http("signin", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: signin,
 });
