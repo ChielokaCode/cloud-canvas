@@ -27,7 +27,7 @@ jobs:
           npm install
           npm run build --if-present
 
-      # 4️⃣ Deploy frontend + API to Static Web App
+      # 4️⃣ Deploy frontend + API to Static Web Apps
       - name: Build and Deploy to Azure Static Web App
         uses: Azure/static-web-apps-deploy@v1
         with:
