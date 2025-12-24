@@ -1,4 +1,4 @@
-import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getContainer, CONTAINERS } from "../lib/cosmos"
 import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
@@ -76,3 +76,9 @@ export async function signin(
     return { status: 500, jsonBody: { error: 'Failed to sign in.' } };
   }
 }
+
+app.http("signin", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: signin,
+});

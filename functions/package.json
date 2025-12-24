@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "Azure Functions backend for Lumina photo sharing app",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsc",
-    "watch": "tsc -w",
-    "start": "func start",
     "test": "echo \"No tests yet\""
   },
   "dependencies": {
