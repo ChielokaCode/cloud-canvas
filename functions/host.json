@@ -15,7 +15,8 @@
   "cors": {
     "allowedOrigins": [
       "http://localhost:8080",
-      "https://icy-wave-0f65c860f.2.azurestaticapps.net"
+      "https://icy-wave-0f65c860f.2.azurestaticapps.net",
+      "https://ambitious-pond-0b778870f.1.azurestaticapps.net"
     ],
     "supportCredentials": true
   }
