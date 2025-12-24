@@ -33,8 +33,7 @@ const Index = () => {
             </h1>
             
             <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-              Join a vibrant community of photographers and enthusiasts. 
-              Share stunning visuals, discover inspiring content, and connect through the art of photography.
+              Connect with a vibrant community of creators and fans. Share your best shots, explore inspiring content, and interact through the art of photos and stories.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '200ms' }}>
@@ -47,7 +46,7 @@ const Index = () => {
                 </Link>
               ) : (
                 <>
-                  <Button 
+                  {/* <Button 
                     variant="hero" 
                     size="xl"
                     onClick={() => loginAsRole('consumer')}
@@ -62,7 +61,7 @@ const Index = () => {
                   >
                     <Camera className="mr-2 h-5 w-5" />
                     Login as Creator
-                  </Button>
+                  </Button> */}
                 </>
               )}
             </div>
@@ -75,10 +74,10 @@ const Index = () => {
         <div className="container">
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
-              Everything you need to share your vision
+              Everything you need to share your story
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Whether you're a creator showcasing your work or an enthusiast discovering new perspectives
+              Whether you're sharing your moments or exploring stories from others…
             </p>
           </div>
 
@@ -127,11 +126,11 @@ const Index = () => {
                 Ready to share your story?
               </h2>
               <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">
-                Join thousands of creators and start sharing your unique perspective with the world.
+                Chat with friends and family while sharing your unique perspective with the world.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
+                {/* <Button 
                   size="lg" 
                   className="bg-background text-foreground hover:bg-background/90"
                   onClick={() => loginAsRole('creator')}
@@ -146,7 +145,7 @@ const Index = () => {
                   onClick={() => loginAsRole('consumer')}
                 >
                   Explore Photos
-                </Button>
+                </Button> */}
               </div>
             </div>
           </div>
@@ -163,7 +162,7 @@ const Index = () => {
             <span className="font-display font-semibold">Lumina</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2024 Lumina. Powered by Azure Cloud Services.
+            © 2025 Lumina Photo App.
           </p>
         </div>
       </footer>
