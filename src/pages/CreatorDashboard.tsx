@@ -83,7 +83,7 @@ const totalComments = myPhotos.reduce(
           </Dialog>
         </div>
 
-        {/* Stats */}
+        {/* Stats spec */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {stats.map((stat) => (
             <div
