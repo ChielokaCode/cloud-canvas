@@ -16,12 +16,6 @@
     "AZURE_REDIS_KEY": "afTL7ZNPKgC8BeEtrA4VAJlJy7hlQSHdHAzCaC26XDs=",
 
     "JWT_SECRET": "3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7fddf7fbd5af4cf777d3d795a7a00a16bf7e7f3fb9561ee9baae480da9fe7a18769e71886b03f315"
-  },
-  "Host": {
-    "CORS": [
-      "http://localhost:8080",
-      "https://purple-flower-0eb5ad90f.1.azurestaticapps.net"
-    ]
   }
 }
 

@@ -23,44 +23,6 @@ interface Photo {
 
 
 
-// GET /api/photos - List all photos
-// export async function getPhotos(
-//   request: HttpRequest,
-//   context: InvocationContext
-// ): Promise<HttpResponseInit> {
-//   try {
-//     const page = parseInt(request.query.get('page') || '1');
-//     const limit = parseInt(request.query.get('limit') || '20');
-//     const offset = (page - 1) * limit;
-
-//     // Check cache first
-//     // const cacheKey = CACHE_KEYS.photos(page);
-//     // const cached = await cacheGet<Photo[]>(cacheKey);
-//     // if (cached) {
-//     //   return { status: 200, jsonBody: cached };
-//     // }
-
-//     const container = await getContainer(CONTAINERS.PHOTOS);
-//     const { resources: photos } = await container.items
-//       .query({
-//         query: 'SELECT * FROM c ORDER BY c.createdAt DESC OFFSET @offset LIMIT @limit',
-//         parameters: [
-//           { name: '@offset', value: offset },
-//           { name: '@limit', value: limit },
-//         ],
-//       })
-//       .fetchAll();
-
-//     // Cache results
-//     // await cacheSet(cacheKey, photos, 60);
-
-//     return { status: 200, jsonBody: photos };
-//   } catch (error) {
-//     context.error('Error fetching photos:', error);
-//     return { status: 500, jsonBody: { error: 'Failed to fetch photos' } };
-//   }
-// }
-
 
 export async function getPhotos(
   request: HttpRequest,
@@ -105,41 +67,6 @@ export async function getPhotos(
   }
 }
 
-
-// GET /api/photos/:id - Get single photo
-// export async function getPhoto(
-//   request: HttpRequest,
-//   context: InvocationContext
-// ): Promise<HttpResponseInit> {
-//   try {
-//     const id = request.params.id;
-//     if (!id) {
-//       return { status: 400, jsonBody: { error: 'Photo ID required' } };
-//     }
-
-//     // Check cache first
-//     const cacheKey = CACHE_KEYS.photo(id);
-//     const cached = await cacheGet<Photo>(cacheKey);
-//     if (cached) {
-//       return { status: 200, jsonBody: cached };
-//     }
-
-//     const container = await getContainer(CONTAINERS.PHOTOS);
-//     const { resource: photo } = await container.item(id, id).read();
-
-//     if (!photo) {
-//       return { status: 404, jsonBody: { error: 'Photo not found' } };
-//     }
-
-//     // Cache result
-//     await cacheSet(cacheKey, photo, 300);
-
-//     return { status: 200, jsonBody: photo };
-//   } catch (error) {
-//     context.error('Error fetching photo:', error);
-//     return { status: 500, jsonBody: { error: 'Failed to fetch photo' } };
-//   }
-// }
 
 export async function getPhoto(
   request: HttpRequest,

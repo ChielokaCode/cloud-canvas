@@ -11,5 +11,12 @@
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
     "version": "[4.*, 5.0.0)"
+  },
+  "cors": {
+    "allowedOrigins": [
+      "http://localhost:8080",
+      "https://icy-wave-0f65c860f.2.azurestaticapps.net"
+    ],
+    "supportCredentials": true
   }
 }

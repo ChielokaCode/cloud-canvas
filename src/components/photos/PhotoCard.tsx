@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePhotos } from '@/contexts/PhotoContext';
 import { cn } from '@/lib/utils';
+import { API_BASE_URL } from "@/config/azureConfig";
 
 interface PhotoCardProps {
   photo: Photo;
@@ -26,7 +27,7 @@ export function PhotoCard({ photo, onOpenDetail }: PhotoCardProps) {
   useEffect(() => {
     const fetchComments = async () => {
       try {
-        const response = await fetch('http://localhost:7071/api/get-comments', {
+        const response = await fetch(`${API_BASE_URL}/get-comments`, {
           method: 'GET', 
           headers: {
             'x-photo-id': photo.id,

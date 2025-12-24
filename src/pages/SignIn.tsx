@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
+import { API_BASE_URL } from '@/config/azureConfig';
 
 
 const SignIn = () => {
@@ -32,7 +33,7 @@ const handleSignIn = async () => {
   setLoading(true);
 
   try {
-    const res = await fetch("http://localhost:7071/api/signin", {
+    const res = await fetch(`${API_BASE_URL}/signin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),

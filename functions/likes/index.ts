@@ -1,6 +1,5 @@
 import { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getContainer, CONTAINERS } from '../lib/cosmos';
-import { cacheGet, cacheSet, cacheDelete, CACHE_KEYS } from '../lib/redis';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Like {

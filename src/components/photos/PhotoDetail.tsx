@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePhotos } from '@/contexts/PhotoContext';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { API_BASE_URL } from '@/config/azureConfig';
 
 interface PhotoDetailProps {
   photo: Photo;
@@ -52,7 +53,7 @@ const getUserId = () => {
   photoId: string,
   userId?: string
 ): Promise<GetLikesResponse> => {
-  const response = await fetch('http://localhost:7071/api/get-likes', {
+  const response = await fetch(`${API_BASE_URL}/get-likes`, {
     method: 'GET',
     headers: {
       'x-photo-id': photoId,
@@ -84,7 +85,7 @@ useEffect(() => {
 
 
   const likePhotoRequest = async () => {
-  const response = await fetch('http://localhost:7071/api/like-photo', {
+  const response = await fetch(`${API_BASE_URL}/like-photo`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -96,7 +97,7 @@ useEffect(() => {
 };
 
 const unlikePhotoRequest = async () => {
-  const response = await fetch('http://localhost:7071/api/unlike-photo', {
+  const response = await fetch(`${API_BASE_URL}/unlike-photo`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -140,7 +141,7 @@ const unlikePhotoRequest = async () => {
 useEffect(() => {
   const fetchComments = async () => {
     try {
-      const response = await fetch('http://localhost:7071/api/get-comments', {
+      const response = await fetch(`${API_BASE_URL}/get-comments`, {
         method: 'GET', 
         headers: {
           'x-photo-id': photo.id,
@@ -170,7 +171,7 @@ const handleSubmitComment = async (e: React.FormEvent) => {
 setLoading(true); 
 setError(null);
   try {
-    const response = await fetch('http://localhost:7071/api/create-comment', {
+    const response = await fetch(`${API_BASE_URL}/create-comment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

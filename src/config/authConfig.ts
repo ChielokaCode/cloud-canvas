@@ -1,13 +1,10 @@
 import { Configuration, LogLevel } from '@azure/msal-browser';
 
 // Azure AD B2C Configuration
-// These values should come from your .env file
-// const tenantId = import.meta.env.VITE_AZURE_AD_TENANT || '';
-// const clientId = import.meta.env.VITE_AZURE_AD_CLIENT_ID || '';
-const clientId = '5c90d1bc-43ce-4737-ba5e-659583441194';
-const tenantId = '87902317-6752-4f33-8bfc-1f73e9287d66';
-//const signInPolicy = import.meta.env.VITE_AZURE_AD_B2C_POLICY_SIGNIN || 'B2C_1_signupsignin';
-const redirectUri = 'http://localhost:8080';
+
+const clientId = import.meta.env.VITE_AZURE_AD_CLIENT_ID || '';
+const tenantId = import.meta.env.VITE_AZURE_AD_TENANT || '';
+const redirectUri = window.location.origin
 
 // B2C authority URLs
 // const b2cPolicies = {

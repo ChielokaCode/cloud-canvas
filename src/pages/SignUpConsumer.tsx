@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE_URL } from '@/config/azureConfig';
 
 const SignUpConsumer = () => {
   const [email, setEmail] = useState("");
@@ -20,7 +21,7 @@ const SignUpConsumer = () => {
 }
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:7071/api/signup-consumer", { // updated URL
+      const res = await fetch(`${API_BASE_URL}/signup-consumer`, { // updated URL
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, name }),

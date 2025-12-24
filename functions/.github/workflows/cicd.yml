@@ -1,0 +1,41 @@
+# File: .github/workflows/cicd.yml
+
+name: Deploy Azure Functions
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Node
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 3. Install dependencies & build
+      - name: Install dependencies
+        run: |
+          npm install
+          npm run build --if-present
+
+      # 4. Install Azure Functions Core Tools
+      - name: Install Azure Functions Core Tools
+        run: |
+          npm install -g azure-functions-core-tools@4 --unsafe-perm true
+
+      # 5. Deploy to Azure Functions
+      - name: Deploy to Azure Functions App
+        run: |
+          func azure functionapp publish lumina-backend
+        env:
+          AZURE_FUNCTIONAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
