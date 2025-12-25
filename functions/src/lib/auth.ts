@@ -1,7 +1,45 @@
-import jwt, { JwtPayload } from 'jsonwebtoken';
+// import jwt, { JwtPayload } from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET!; 
-// or PUBLIC_KEY for RS256
+// const JWT_SECRET = process.env.JWT_SECRET!; 
+// // or PUBLIC_KEY for RS256
+
+// export interface AuthUser {
+//   id: string;
+//   name: string;
+//   role: string;
+//   email?: string;
+// }
+
+
+// export function getUserFromJwtToken(
+//   authorizationHeader?: string | null
+// ): AuthUser | null {
+
+//   if (!authorizationHeader) return null;
+
+//   const [type, token] = authorizationHeader.split(' ');
+
+//   if (type !== 'Bearer' || !token) {
+//     return null;
+//   }
+
+//   try {
+//     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+
+//     return {
+//       id: decoded.sub as string,
+//       name: decoded.name as string,
+//       role: decoded.role as string,
+//       email: decoded.email as string | undefined,
+//     };
+//   } catch (error) {
+//     console.error('Invalid JWT:', error);
+//     return null;
+//   }
+// }
+
+
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 export interface AuthUser {
   id: string;
@@ -10,21 +48,29 @@ export interface AuthUser {
   email?: string;
 }
 
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret) {
+    throw new Error("JWT_SECRET is not defined");
+  }
+
+  return secret;
+}
 
 export function getUserFromJwtToken(
   authorizationHeader?: string | null
 ): AuthUser | null {
-
   if (!authorizationHeader) return null;
 
-  const [type, token] = authorizationHeader.split(' ');
+  const [type, token] = authorizationHeader.split(" ");
 
-  if (type !== 'Bearer' || !token) {
+  if (type !== "Bearer" || !token) {
     return null;
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as JwtPayload;
 
     return {
       id: decoded.sub as string,
@@ -33,7 +79,7 @@ export function getUserFromJwtToken(
       email: decoded.email as string | undefined,
     };
   } catch (error) {
-    console.error('Invalid JWT:', error);
+    console.error("Invalid JWT:", error);
     return null;
   }
 }

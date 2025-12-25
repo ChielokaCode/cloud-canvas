@@ -2,7 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { getContainer, CONTAINERS } from '../lib/cosmos';
 import { uploadPhoto, deletePhoto } from '../lib/storage';
 import { getUserFromJwtToken } from '../lib/auth';
-import { cacheGet, cacheSet, cacheDelete, bumpPhotosCacheVersion, getPhotosCacheVersion, cacheInvalidatePattern, CACHE_KEYS } from '../lib/redis';
+import { cacheGet, cacheSet, cacheDelete, bumpPhotosCacheVersion, getPhotosCacheVersion, CACHE_KEYS } from '../lib/redis';
 import { v4 as uuidv4 } from 'uuid';
 import { File } from 'undici';
 
@@ -35,7 +35,13 @@ export async function createPhoto(
     const userRole = request.headers.get('x-user-role');
 
     const authHeader = request.headers.get('authorization');
-  const user = getUserFromJwtToken(authHeader);
+
+    let user;
+try {
+  user = getUserFromJwtToken(authHeader);
+} catch (err) {
+  return { status: 401, jsonBody: { error: "Invalid or missing token" } };
+}
   context.log("User", user?.role)
 
     if (userRole !== 'creator') {
