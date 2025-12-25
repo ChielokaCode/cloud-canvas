@@ -46,6 +46,6 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_AMBITIOUS_POND_0B778870F }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "src"          # frontend code path
+          app_location: "/"          # frontend code path
           api_location: "functions"  # backend folder
           output_location: "dist"    # frontend build output
