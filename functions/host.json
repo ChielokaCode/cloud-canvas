@@ -20,5 +20,8 @@
       "https://ambitious-pond-0b778870f.1.azurestaticapps.net/"
     ],
     "supportCredentials": true
+  },
+  "Host": {
+    "CORS": "https://ambitious-pond-0b778870f.1.azurestaticapps.net"
   }
 }
