@@ -73,7 +73,7 @@ export async function signin(
     };
   } catch (error) {
     context.error('Sign-In Error:', error);
-    return { status: 500, jsonBody: { error: 'Failed to sign in.' } };
+    return { status: 500, jsonBody: { error: error } };
   }
 }
 
