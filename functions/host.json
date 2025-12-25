@@ -16,6 +16,7 @@
     "allowedOrigins": [
       "http://localhost:8080/",
       "https://ambitious-pond-0b778870f.1.azurestaticapps.net",
+      "https://ambitious-pond-0b778870f.1.azurestaticapps.net/signin",
       "https://ambitious-pond-0b778870f.1.azurestaticapps.net/"
     ],
     "supportCredentials": true
