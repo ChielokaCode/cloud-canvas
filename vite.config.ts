@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       // Redirect all /api calls to your local Azure Functions backend
       '/api': {
-        target: 'http://localhost:7071',
+        target: 'https://luminabackendfunctions.azurewebsites.net',
         changeOrigin: true,
         secure: false,
       },

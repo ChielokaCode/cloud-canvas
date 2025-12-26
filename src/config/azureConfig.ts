@@ -10,7 +10,7 @@ const AZURE_AD_TENANT = import.meta.env.VITE_AZURE_AD_TENANT || '';
 const AZURE_AD_REDIRECT_URI = window.location.origin;
 
 
-export const API_BASE_URL ='http://localhost:7071/api';
+export const API_BASE_URL ='https://luminabackendfunctions.azurewebsites.net/api';
 
 export const azureConfig = {
   api: {
